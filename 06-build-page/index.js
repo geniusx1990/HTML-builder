@@ -1,7 +1,7 @@
 const { constants } = require('buffer');
 const fs = require('fs');
 const path = require('path');
-
+const fsPromises = fs.promises;
 
 async function mergeCssFiles() {
     const writeToFile = await fs.createWriteStream(path.resolve(__dirname, 'project-dist/style.css'), 'utf-8')
@@ -10,7 +10,7 @@ async function mergeCssFiles() {
         if (err)
             console.log(err);
         else {
-            console.log("\nCSS Bundle created!");
+            console.log("CSS Bundle created!");
             files.forEach(file => {
                 if (!file.isDirectory() && path.extname(file.name) === '.css') {
                     const stream = fs.createReadStream(path.resolve(__dirname, `styles/${file.name}`), 'utf-8')
@@ -20,11 +20,6 @@ async function mergeCssFiles() {
         }
     });
 }
-
-/* const newFolderCopy = fs.mkdir(path.join(__dirname, 'project-dist'), { recursive: true }, (err) => {
-    console.log('Directory created successfully!');
-    mergeCssFiles();
-}); */
 
 
 async function copyDirectory() {
@@ -65,46 +60,27 @@ async function copyDirectory() {
 
 
 
-
-
-
 async function createHTML() {
-    const stream = fs.createReadStream(path.resolve(__dirname, 'template copy.html'), 'utf-8');
-    const writeToFile = await fs.createWriteStream(path.resolve(__dirname, 'project-dist/index.html'), 'utf-8')
-    let template = fs.readFile(path.resolve(__dirname, 'template.html'), 'utf-8');
-/*     fs.readdir(path.resolve(__dirname, 'components'), { withFileTypes: true }, (err, files) => {
-        if (err)
-            console.log(err);
-        else {
-            files.forEach(file => {
+    const sourceHTML = path.resolve(__dirname, 'template.html');
+    let reading = await fsPromises.readFile(sourceHTML, 'utf-8');
+    const folderForReading = path.resolve(__dirname, 'components');
+    const componentsHTML = await fsPromises.readdir(folderForReading);
 
+    for (let file of componentsHTML) {
+        if (path.extname(file) == '.html') {
+            const htmlToAdd = path.parse(path.join(folderForReading, file)).name;
+            let document = await fsPromises.readFile(path.join(folderForReading, file));
+            reading = reading.replace(`{{${htmlToAdd}}}`, document);
+        };
+    }
 
-
-               // console.log(file.name.split('.')[0])
-                stream.on('data', (chunk) => {
-                    //console.log(chunk)
-
-                     if (chunk.includes(file.name.split('.')[0])) {
-                        `${file.name.split('.')[0]}`.replace(' aaaa ')
-                        //console.log(file.name.split('.')[0])
-                    } 
-
-                  }) 
-            })
-            //stream.pipe(writeToFile)
-
-        }
+    fs.writeFile(path.resolve(__dirname, 'project-dist/index.html'), reading, (err) => {
+        if (err) { throw err; }
     });
-  */
-    
-
-    //stream.pipe(writeToFile);
 }
 
+
 createHTML()
-
-
-
 copyDirectory();
 mergeCssFiles();
 
